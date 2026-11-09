@@ -38,3 +38,4 @@ jobs:
         with:
           name: StereoVocalShifter-macOS-VST3
           path: build/StereoVocalShifter_artefacts/Release/VST3/StereoVocalShifter.vst3
+
