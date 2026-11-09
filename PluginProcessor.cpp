@@ -2,12 +2,10 @@
 #include "PluginEditor.h"
 
 VibeshifterProcessor::VibeshifterProcessor()
-#imarker:base
     : AudioProcessor(BusesProperties()
                      .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                      .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "Parameters", createParameterLayout())
-#endif
 {
 }
 
@@ -80,7 +78,6 @@ void VibeshifterProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // RMS Level für Visualizer ermitteln
     float rms = 0.0f;
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
@@ -92,8 +89,6 @@ void VibeshifterProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     visualizerSpread.store(apvts.getRawParameterValue("SPREAD")->load());
     visualizerChorusRate.store(apvts.getRawParameterValue("CHORUS_RATE")->load());
     visualizerDelayActive.store(apvts.getRawParameterValue("DELAY_MIX")->load() > 0.01f);
-
-    // DSP-Verarbeitung erfolgt hier
 }
 
 bool VibeshifterProcessor::hasEditor() const { return true; }
