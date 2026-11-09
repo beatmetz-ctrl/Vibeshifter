@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(Deal8 VERSION 1.0.0)
+project(Vibeshifter VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,7 +12,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JUCE)
 
-juce_add_plugin(Deal8
+juce_add_plugin(Vibeshifter
     COMPANY_NAME "MeatTheBeat"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
@@ -21,14 +21,14 @@ juce_add_plugin(Deal8
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD FALSE
     PLUGIN_MANUFACTURER_CODE MtBt
-    PLUGIN_CODE Del8
+    PLUGIN_CODE VbhS
     FORMATS VST3 Standalone
-    PRODUCT_NAME "Deal8"
+    PRODUCT_NAME "Vibeshifter"
 )
 
-juce_generate_juce_header(Deal8)
+juce_generate_juce_header(Vibeshifter)
 
-target_sources(Deal8
+target_sources(Vibeshifter
     PRIVATE
         PitchFormantShifter.h
         PluginProcessor.h
@@ -37,14 +37,14 @@ target_sources(Deal8
         PluginEditor.cpp
 )
 
-target_compile_definitions(Deal8
+target_compile_definitions(Vibeshifter
     PRIVATE
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-target_link_libraries(Deal8
+target_link_libraries(Vibeshifter
     PRIVATE
         juce::juce_audio_utils
         juce::juce_dsp
