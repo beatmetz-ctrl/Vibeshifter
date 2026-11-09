@@ -28,13 +28,13 @@ juce_add_plugin(StereoVocalShifter
 
 juce_generate_juce_header(StereoVocalShifter)
 
-target_sources(StereoVocalShifter
+target_sources(Deal8
     PRIVATE
-        Source/PitchFormantShifter.h
-        Source/PluginProcessor.h
-        Source/PluginProcessor.cpp
-        Source/PluginEditor.h
-        Source/PluginEditor.cpp
+        PitchFormantShifter.h
+        PluginProcessor.h
+        PluginProcessor.cpp
+        PluginEditor.h
+        PluginEditor.cpp
 )
 
 target_compile_definitions(StereoVocalShifter
