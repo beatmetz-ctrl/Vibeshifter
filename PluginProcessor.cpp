@@ -1,87 +1,116 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-StereoVocalShifterAudioProcessor::StereoVocalShifterAudioProcessor()
+VibeshifterProcessor::VibeshifterProcessor()
+#imarker:base
     : AudioProcessor(BusesProperties()
-                     .withInput("Input", juce::AudioChannelSet::stereo(), true)
-                     .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+                     .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                     .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "Parameters", createParameterLayout())
+#endif
 {
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout StereoVocalShifterAudioProcessor::createParameterLayout()
+VibeshifterProcessor::~VibeshifterProcessor()
+{
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout VibeshifterProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID("PITCH", 1), "Pitch (Semitones)",
-        juce::NormalisableRange<float>(-12.0f, 12.0f, 0.01f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("PITCH", "Pitch", juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("FORMANT", "Formant", juce::NormalisableRange<float>(-12.0f, 12.0f, 0.1f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("MIX", "Mix", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 1.0f));
+    
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("WOW_RATE", "Wow Rate", juce::NormalisableRange<float>(0.1f, 10.0f, 0.01f), 1.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("WOW_DEPTH", "Wow Depth", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.2f));
+    params.push_back(std::make_unique<juce::AudioParameterBool>("WOW_SYNC", "Wow Sync", false));
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID("FORMANT", 1), "Formant (Semitones)",
-        juce::NormalisableRange<float>(-12.0f, 12.0f, 0.01f), 0.0f));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>("SAT_MODE", "Sat Mode", juce::StringArray{"Light", "Medium", "Strong"}, 0));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("SAT_DRIVE", "Sat Drive", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.1f));
 
-    params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID("MIX", 1), "Dry/Wet Mix",
-        juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f), 100.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("HPF", "HPF", juce::NormalisableRange<float>(20.0f, 1000.0f, 1.0f, 0.5f), 20.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("LPF", "LPF", juce::NormalisableRange<float>(1000.0f, 20000.0f, 1.0f, 0.5f), 20000.0f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("SPREAD", "Spread", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("CHORUS_RATE", "Chorus Rate", juce::NormalisableRange<float>(0.1f, 5.0f, 0.01f), 1.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("CHORUS_DEPTH", "Chorus Depth", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.3f));
+
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("DELAY_TIME", "Delay Time", juce::NormalisableRange<float>(1.0f, 1000.0f, 1.0f), 250.0f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("DELAY_FEEDBACK", "Delay Feedback", juce::NormalisableRange<float>(0.0f, 0.95f, 0.01f), 0.3f));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>("DELAY_MIX", "Delay Mix", juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.5f));
 
     return { params.begin(), params.end() };
 }
 
-void StereoVocalShifterAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
-{
-    juce::ignoreUnused(sampleRate, samplesPerBlock);
-    for (int ch = 0; ch < 2; ++ch)
-        shifters[ch].reset();
+const juce::String VibeshifterProcessor::getName() const { return JucePlugin_Name; }
+bool VibeshifterProcessor::acceptsMidi() const { return false; }
+bool VibeshifterProcessor::producesMidi() const { return false; }
+bool VibeshifterProcessor::isMidiEffect() const { return false; }
+double VibeshifterProcessor::getTailLengthSeconds() const { return 0.0; }
 
-    setLatencySamples(PitchFormantShifter::fftSize);
+int VibeshifterProcessor::getNumPrograms() { return 1; }
+int VibeshifterProcessor::getCurrentProgram() { return 0; }
+void VibeshifterProcessor::setCurrentProgram(int) {}
+const juce::String VibeshifterProcessor::getProgramName(int) { return {}; }
+void VibeshifterProcessor::changeProgramName(int, const juce::String&) {}
+
+void VibeshifterProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+{
+    currentSampleRate = sampleRate;
 }
 
-void StereoVocalShifterAudioProcessor::releaseResources()
-{
-}
+void VibeshifterProcessor::releaseResources() {}
 
-bool StereoVocalShifterAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+bool VibeshifterProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
-
-    return layouts.getMainOutputChannelSet() == layouts.getMainInputChannelSet();
+    return true;
 }
 
-void StereoVocalShifterAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void VibeshifterProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    float pitchSemitones = apvts.getRawParameterValue("PITCH")->load();
-    float formantSemitones = apvts.getRawParameterValue("FORMANT")->load();
-    float mixPercent = apvts.getRawParameterValue("MIX")->load() / 100.0f;
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-    int numChannels = juce::jmin(buffer.getNumChannels(), 2);
-    int numSamples = buffer.getNumSamples();
-    double sampleRate = getSampleRate();
-
-    for (int ch = 0; ch < numChannels; ++ch)
+    // RMS Level für Visualizer ermitteln
+    float rms = 0.0f;
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        float* channelData = buffer.getWritePointer(ch);
-        shifters[ch].processBlock(channelData, numSamples, sampleRate, pitchSemitones, formantSemitones, mixPercent);
+        rms += buffer.getRMSLevel(channel, 0, buffer.getNumSamples());
     }
+    rms = (totalNumInputChannels > 0) ? (rms / totalNumInputChannels) : 0.0f;
+
+    visualizerLevel.store(rms);
+    visualizerSpread.store(apvts.getRawParameterValue("SPREAD")->load());
+    visualizerChorusRate.store(apvts.getRawParameterValue("CHORUS_RATE")->load());
+    visualizerDelayActive.store(apvts.getRawParameterValue("DELAY_MIX")->load() > 0.01f);
+
+    // DSP-Verarbeitung erfolgt hier
 }
 
-juce::AudioProcessorEditor* StereoVocalShifterAudioProcessor::createEditor()
+bool VibeshifterProcessor::hasEditor() const { return true; }
+
+juce::AudioProcessorEditor* VibeshifterProcessor::createEditor()
 {
-    return new StereoVocalShifterAudioProcessorEditor(*this);
+    return new VibeshifterEditor(*this);
 }
 
-void StereoVocalShifterAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
+void VibeshifterProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
     copyXmlToBinary(*xml, destData);
 }
 
-void StereoVocalShifterAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
+void VibeshifterProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
     if (xmlState != nullptr && xmlState->hasTagName(apvts.state.getType()))
@@ -90,5 +119,5 @@ void StereoVocalShifterAudioProcessor::setStateInformation(const void* data, int
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new StereoVocalShifterAudioProcessor();
+    return new VibeshifterProcessor();
 }
