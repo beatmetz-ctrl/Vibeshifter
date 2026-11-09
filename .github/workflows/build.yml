@@ -1,38 +1,38 @@
-name: Build Vibeshifter
+name: Build VST3 Plugin (VibeShifter)
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
-  build-windows:
-    name: Build Windows (VST3 & Standalone)
-    runs-on: windows-latest
+  build-vst3:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: VibeShifter-Windows-VST3
+            vst3_path: build/VibeShifter_artefacts/Release/VST3/VibeShifter.vst3
+          - os: macos-latest
+            artifact_name: VibeShifter-macOS-VST3
+            vst3_path: build/VibeShifter_artefacts/Release/VST3/VibeShifter.vst3
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-    - name: Build Targets
-      run: cmake --build build --config Release --target Vibeshifter_VST3 Vibeshifter_Standalone
+      - name: Build VST3
+        run: cmake --build build --config Release --target VibeShifter_VST3 -j 4
 
-    - name: Upload VST3 Plugin
-      uses: actions/upload-artifact@v4
-      with:
-        name: Vibeshifter-VST3-Windows
-        path: build/Vibeshifter_artefacts/Release/VST3/
-        if-no-files-found: error
-
-    - name: Upload Standalone App
-      uses: actions/upload-artifact@v4
-      with:
-        name: Vibeshifter-Standalone-Windows
-        path: build/Vibeshifter_artefacts/Release/Standalone/
-        if-no-files-found: warn
+      - name: Upload VST3 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.vst3_path }}
+          if-no-files-found: error
