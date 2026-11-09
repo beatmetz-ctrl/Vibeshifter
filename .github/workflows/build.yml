@@ -1,0 +1,40 @@
+name: Build VST3 Plugin
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build VST3
+        run: cmake --build build --config Release --target StereoVocalShifter_VST3
+
+      - name: Upload VST3 Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: StereoVocalShifter-Windows-VST3
+          path: build/StereoVocalShifter_artefacts/Release/VST3/StereoVocalShifter.vst3
+
+      - name: Upload VST3 Artifact (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: StereoVocalShifter-macOS-VST3
+          path: build/StereoVocalShifter_artefacts/Release/VST3/StereoVocalShifter.vst3
