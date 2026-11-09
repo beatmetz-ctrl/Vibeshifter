@@ -1,9 +1,19 @@
 #include "PluginEditor.h"
 
-CustomVisualizer::CustomVisualizer(VibeshifterProcessor& p) : proc(p) { startTimerHz(30); }
-CustomVisualizer::~CustomVisualizer() { stopTimer(); }
+CustomVisualizer::CustomVisualizer(VibeshifterProcessor& p) : proc(p)
+{
+    startTimerHz(30);
+}
 
-void CustomVisualizer::timerCallback() { repaint(); }
+CustomVisualizer::~CustomVisualizer()
+{
+    stopTimer();
+}
+
+void CustomVisualizer::timerCallback()
+{
+    repaint();
+}
 
 void CustomVisualizer::paint(juce::Graphics& g)
 {
